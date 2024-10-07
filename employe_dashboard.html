@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskifyPro - Employee Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        header {
+            background-color: rgb(159, 117, 198);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            width: 70px;
+            height: 70px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        h1 {
+            display: inline-block;
+            vertical-align: middle;
+            margin: 0;
+        }
+
+        nav {
+            background-color: rgb(159, 117, 198);
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav button {
+            background-color: white;
+            color: rgb(159, 117, 198);
+            border: 1px solid rgb(159, 117, 198);
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        nav button:hover {
+            background-color: rgb(158, 107, 205);
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 100px auto 20px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #4a90e2;
+            margin-bottom: 15px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 40vh;
+            width: 80vw;
+            margin: auto;
+        }
+
+        .assigned-tasks {
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .team-tasks {
+            margin-top: 40px;
+        }
+
+        .team-tasks h3 {
+            color: #4a90e2;
+        }
+
+        .team-tasks table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .team-tasks th,
+        .team-tasks td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .team-tasks th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .add-task-form {
+            margin-top: 20px;
+        }
+
+        .filter {
+            margin-top: 20px;
+        }
+
+        .filter label {
+            margin-right: 10px;
+        }
+
+        .filter select {
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="unnamed.png" class="logo" alt="NexaTech Solutions Logo">
+        <h1>TaskifyPro</h1>
+        <nav>
+            <button onclick="showAdminDashboard()">Admin Dashboard</button>
+            <button onclick="showEmployeeDashboard()">Employee Dashboard</button>
+            <button onclick="logout()">Log Out</button>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <!-- Employee Dashboard -->
+        <div id="employeeDashboard" class="dashboard">
+            <h2>Employee Dashboard</h2>
+
+            <!-- Team Progress Chart -->
+            <div class="chart-container">
+                <canvas id="progressChart"></canvas>
+            </div>
+
+            <!-- Add Task Form -->
+            <div class="add-task-form">
+                <h3>Add New Task</h3>
+                <input type="text" id="newTaskTitle" placeholder="Task Title" required>
+                <select id="newTaskAssignedTo">
+                    <option value="">Assign to</option>
+                    <option value="1">Alice</option>
+                    <option value="2">Bob</option>
+                    <option value="3">Charlie</option>
+                </select>
+                <select id="newTaskStatus">
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                </select>
+                <input type="date" id="newTaskDeadline" required>
+                <button onclick="addTask()">Add Task</button>
+            </div>
+
+            <!-- Filter Tasks -->
+            <div class="filter">
+                <label for="taskStatusFilter">Filter by Status:</label>
+                <select id="taskStatusFilter" onchange="filterTasks()">
+                    <option value="All">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+
+            <!-- Assigned Tasks Section -->
+            <div class="assigned-tasks">
+                <h3>Your Assigned Tasks</h3>
+                <table>
+                    <tr>
+                        <th>Task Title</th>
+                        <th>Status</th>
+                        <th>Deadline</th>
+                    </tr>
+                    <tbody id="tasksTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Team Members' Tasks Section -->
+            <div class="team-tasks">
+                <h3>Tasks Assigned to Team Members</h3>
+                <table>
+                    <tr>
+                        <th>Member Name</th>
+                        <th>Task Title</th>
+                        <th>Status</th>
+                    </tr>
+                    <tbody id="teamTasksTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const tasks = [
+            { title: 'Task 1', status: 'Completed', deadline: '2024-10-05', assignedTo: 1 },
+            { title: 'Task 2', status: 'Pending', deadline: '2024-10-10', assignedTo: 2 },
+            { title: 'Task 3', status: 'In Progress', deadline: '2024-10-15', assignedTo: 1 },
+            { title: 'Task 4', status: 'Completed', deadline: '2024-10-01', assignedTo: 3 },
+            // Add more tasks as needed
+        ];
+
+        const teamMembers = [
+            { id: 1, name: 'Alice' },
+            { id: 2, name: 'Bob' },
+            { id: 3, name: 'Charlie' },
+            { id: 4, name: 'John' },
+            { id: 5, name: 'Eve' }
+        ];
+
+        const userId = 2; // Example user ID for logged-in employee (change as necessary)
+
+        function renderEmployeeDashboard() {
+            renderProgressChart();
+            renderAssignedTasks();
+            renderTeamTasks();
+        }
+
+        function renderProgressChart() {
+            const completedTasks = tasks.filter(task => task.status === 'Completed').length;
+            const pendingTasks = tasks.filter(task => task.status === 'Pending').length;
+            const inProgressTasks = tasks.filter(task => task.status === 'In Progress').length;
+
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            const progressChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Completed', 'Pending', 'In Progress'],
+                    datasets: [{
+                        label: 'Task Progress',
+                        data: [completedTasks, pendingTasks, inProgressTasks],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(255, 99, 132, 0.2)',
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(255, 99, 132, 1)',
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderAssignedTasks() {
+            const tasksTableBody = document.getElementById('tasksTableBody');
+            tasksTableBody.innerHTML = '';
+
+            tasks.forEach(task => {
+                if (task.assignedTo === userId) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td onclick="editTask('${task.title}')">${task.title}</td>
+                        <td>${task.status}</td>
+                        <td>${task.deadline}</td>
+                    `;
+                    tasksTableBody.appendChild(row);
+                }
+            });
+        }
+
+        function renderTeamTasks() {
+            const teamTasksTableBody = document.getElementById('teamTasksTableBody');
+            teamTasksTableBody.innerHTML = '';
+
+            tasks.forEach(task => {
+                const assignedMember = teamMembers.find(member => member.id === task.assignedTo);
+                if (assignedMember) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${assignedMember.name}</td>
+                        <td>${task.title}</td>
+                        <td>${task.status}</td>
+                    `;
+                    teamTasksTableBody.appendChild(row);
+                }
+            });
+        }
+
+        function addTask() {
+            const title = document.getElementById('newTaskTitle').value;
+            const assignedTo = parseInt(document.getElementById('newTaskAssignedTo').value);
+            const status = document.getElementById('newTaskStatus').value;
+            const deadline = document.getElementById('newTaskDeadline').value;
+
+            if (title && assignedTo && deadline) {
+                tasks.push({ title, status, deadline, assignedTo });
+                document.getElementById('newTaskTitle').value = '';
+                document.getElementById('newTaskAssignedTo').value = '';
+                document.getElementById('newTaskStatus').value = 'Pending';
+                document.getElementById('newTaskDeadline').value = '';
+
+                renderAssignedTasks();
+                renderTeamTasks();
+                renderProgressChart();
+            } else {
+                alert('Please fill in all fields.');
+            }
+        }
+
+        function editTask(taskTitle) {
+            const task = tasks.find(t => t.title === taskTitle);
+            if (task) {
+                const newTitle = prompt('Edit Task Title:', task.title);
+                const newStatus = prompt('Edit Task Status:', task.status);
+                const newDeadline = prompt('Edit Task Deadline:', task.deadline);
+
+                if (newTitle) task.title = newTitle;
+                if (newStatus) task.status = newStatus;
+                if (newDeadline) task.deadline = newDeadline;
+
+                renderAssignedTasks();
+                renderTeamTasks();
+                renderProgressChart();
+            }
+        }
+
+        function filterTasks() {
+            const filterValue = document.getElementById('taskStatusFilter').value;
+            const tasksTableBody = document.getElementById('tasksTableBody');
+            tasksTableBody.innerHTML = '';
+
+            tasks.forEach(task => {
+                if (task.assignedTo === userId && (filterValue === 'All' || task.status === filterValue)) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td onclick="editTask('${task.title}')">${task.title}</td>
+                        <td>${task.status}</td>
+                        <td>${task.deadline}</td>
+                    `;
+                    tasksTableBody.appendChild(row);
+                }
+            });
+        }
+
+        // Initial rendering
+        renderEmployeeDashboard();
+    </script>
+</body>
+</html>
